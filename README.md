@@ -43,7 +43,7 @@ A comprehensive monitoring solution for homelab infrastructure using Prometheus,
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/Doomlab7/homelab-monitoring.git
 cd homelab-monitoring
 ```
 
