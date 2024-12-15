@@ -513,14 +513,14 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.1.0",
+      "pluginVersion": "10.2.3",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "count(container_last_seen{container!=\"\"})",
+          "expr": "count(container_cpu_usage_seconds_total{container_label_com_docker_compose_service!=\"\"})",
           "refId": "A"
         }
       ],
