@@ -1,0 +1,231 @@
+x-restart-policy: &restart_policy
+  restart: unless-stopped
+
+services:
+  # Logging Stack
+  minio:
+    <<: *restart_policy
+    image: minio/minio:latest
+    profiles: ["logging"]
+    command: server --console-address ":9001" /data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9002:9001"
+    volumes:
+      - ${DOCKER_HOME:-/tmp/docker-temp}/minio:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  loki:
+    <<: *restart_policy
+    image: grafana/loki:latest
+    profiles: ["logging"]
+    command: -config.file=/etc/loki/local-config.yaml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ${DOCKER_HOME:-/tmp/docker-temp}/loki:/loki
+    environment:
+      - LOKI_RETENTION_PERIOD=${LOKI_RETENTION_DAYS:-30}d
+    deploy:
+      resources:
+        limits:
+          memory: ${LOKI_MEMORY:-1g}
+    depends_on:
+      - minio
+
+  promtail:
+    <<: *restart_policy
+    image: grafana/promtail:latest
+    profiles: ["logging"]
+    volumes:
+      - /var/log:/var/log
+      - ${DOCKER_HOME:-/tmp/docker-temp}/promtail:/etc/promtail
+    command: -config.file=/etc/promtail/config.yml
+    deploy:
+      resources:
+        limits:
+          memory: ${PROMTAIL_MEMORY:-512m}
+    depends_on:
+      - loki
+
+  # Metrics Stack
+  prometheus-init:
+    image: busybox:latest
+    profiles: ["metrics"]
+    volumes:
+      - ${DOCKER_HOME:-/tmp/docker-temp}/stats/prometheus:/prometheus
+    command: sh -c "mkdir -p /prometheus && chown -R 65534:65534 /prometheus"
+    user: root
+
+  node-exporter:
+    <<: *restart_policy
+    image: prom/node-exporter:latest
+    container_name: stats-node-exporter
+    profiles: ["metrics"]
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /:/host:ro,rslave
+    ports:
+      - "9100:9100"
+    deploy:
+      resources:
+        limits:
+          memory: ${NODE_EXPORTER_MEMORY:-128m}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:9100/metrics"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  cadvisor:
+    <<: *restart_policy
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: stats-cadvisor
+    profiles: ["metrics"]
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    privileged: true
+    ports:
+      - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          memory: ${CADVISOR_MEMORY:-128m}
+
+  prometheus:
+    <<: *restart_policy
+    image: prom/prometheus:latest
+    container_name: stats-prometheus
+    profiles: ["metrics"]
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./config/prometheus:/etc/prometheus
+      - ${DOCKER_HOME:-/tmp/docker-temp}/stats/prometheus:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-365d}'
+      - '--storage.tsdb.retention.size=${PROMETHEUS_RETENTION_SIZE:-30GB}'
+      - '--web.enable-lifecycle'
+    deploy:
+      resources:
+        limits:
+          memory: ${PROMETHEUS_MEMORY:-1g}
+    depends_on:
+      - prometheus-init
+      - node-exporter
+
+  grafana:
+    <<: *restart_policy
+    image: grafana/grafana:latest
+    container_name: stats-grafana
+    profiles: ["metrics"]
+    user: "472"  # Default Grafana user ID
+    ports:
+      - "3005:3000"
+    volumes:
+      - grafana-storage:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel
+      - GF_DASHBOARDS_MIN_REFRESH_INTERVAL=5s
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+    deploy:
+      resources:
+        limits:
+          memory: ${GRAFANA_MEMORY:-1g}
+    depends_on:
+      - prometheus
+
+  telegraf:
+    <<: *restart_policy
+    image: telegraf:latest
+    container_name: stats-telegraf
+    profiles: ["metrics"]
+    ports:
+      - "9273:9273"
+    volumes:
+      - ./config/telegraf:/etc/telegraf
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys:/host/sys:ro
+      - /proc:/host/proc:ro
+      - /etc:/host/etc:ro
+    environment:
+      - HOST_PROC=/host/proc
+      - HOST_SYS=/host/sys
+      - HOST_ETC=/host/etc
+    deploy:
+      resources:
+        limits:
+          memory: ${TELEGRAF_MEMORY:-1g}
+
+  smartctl:
+    <<: *restart_policy
+    image: matusnovak/prometheus-smartctl:latest
+    container_name: stats-smartctl
+    profiles: ["metrics"]
+    ports:
+      - "9902:9902"
+    volumes:
+      - /dev:/dev:ro
+    privileged: true
+    deploy:
+      resources:
+        limits:
+          memory: ${SMARTCTL_MEMORY:-1g}
+
+  # # Network Monitoring Stack
+  # speedtest:
+  #   <<: *restart_policy
+  #   image: miguelndecarvalho/speedtest-exporter:latest
+  #   container_name: stats-speedtest
+  #   profiles: ["network"]
+  #   ports:
+  #     - "9798:9798"
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: ${SPEEDTEST_MEMORY:-256m}
+
+  wireshark:
+    <<: *restart_policy
+    image: lscr.io/linuxserver/wireshark:latest
+    profiles: ["network"]
+    cap_add:
+      - NET_ADMIN
+    network_mode: host
+    environment:
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+    volumes:
+      - ${DOCKER_HOME:-/tmp/docker-temp}/wireshark:/config
+    ports:
+      - "3006:3000"
+    devices:
+      - /dev/net/tun
+
+networks:
+  default:
+    name: monitoring
+
+volumes:
+  grafana-storage:

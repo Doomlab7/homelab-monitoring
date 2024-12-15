@@ -2,38 +2,35 @@
 default:
     @just --list
 
-# Install required Ansible collections and roles
-setup:
-    ansible-galaxy collection install community.docker
-    ansible-galaxy collection install community.general
+# Start the complete monitoring stack
+up: up-logging up-metrics up-network
 
-# Check syntax of Ansible playbooks
-lint:
-    ansible-playbook site.yml --syntax-check
+# Start only logging stack (Loki, Promtail, MinIO)
+up-logging:
+    docker compose --profile logging up -d
 
-# Run Ansible in check mode (dry run)
-check:
-    ansible-playbook site.yml --check --diff
+# Start only metrics stack (Prometheus, Grafana, Telegraf, SmartCTL)
+up-metrics:
+    docker compose --profile metrics up -d
 
-# Deploy the entire monitoring stack
-deploy:
-    ansible-playbook site.yml
+# Start only network monitoring (Speedtest, Wireshark)
+up-network:
+    docker compose --profile network up -d
 
-# Deploy only logging components (Loki, Promtail, MinIO)
-deploy-logging:
-    ansible-playbook site.yml --tags logging
+# Stop only logging stack (Loki, Promtail, MinIO)
+down-logging:
+    docker compose --profile logging down
 
-# Deploy only metrics collection (Netdata, Glances, Stats)
-deploy-metrics:
-    ansible-playbook site.yml --tags metrics
+# Stoponly metrics stack (Prometheus, Grafana, Telegraf, SmartCTL)
+down-metrics:
+    docker compose --profile metrics down
 
-# Deploy only network monitoring (Speedtest, Wireshark)
-deploy-network:
-    ansible-playbook site.yml --tags network
+# Stop only network monitoring (Speedtest, Wireshark)
+down-network:
+    docker compose --profile network down
 
-# Stop all monitoring services
-stop:
-    ansible-playbook site.yml -e "monitoring.logging.enabled=false monitoring.metrics.enabled=false monitoring.network.enabled=false"
+# Stop all stacks
+down: down-logging down-metrics down-network
 
 # View logs of a specific service (usage: just logs service=loki)
 logs service:
