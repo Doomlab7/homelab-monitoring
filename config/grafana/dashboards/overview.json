@@ -42,7 +42,8 @@
               }
             ]
           },
-          "unit": "d"
+          "unit": "d",
+          "decimals": 1
         },
         "overrides": []
       },
@@ -74,7 +75,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "node_time_seconds - node_boot_time_seconds",
+          "expr": "(time() - node_boot_time_seconds) / (60 * 60 * 24)",
           "refId": "A"
         }
       ],
