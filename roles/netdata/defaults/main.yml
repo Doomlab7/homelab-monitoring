@@ -1,0 +1,15 @@
+---
+netdata_enabled: false
+netdata_available_externally: false
+
+# network
+netdata_hostname: "netdata"
+netdata_port: "19999"
+
+# docker
+netdata_container_name: "netdata"
+netdata_image_name: "netdata/netdata"
+netdata_image_version: "latest"
+
+# specs
+netdata_memory: 1g

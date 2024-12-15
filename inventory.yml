@@ -1,0 +1,13 @@
+---
+all:
+  children:
+    monitoring_servers:
+      hosts:
+        monitor01:  # Replace with your actual server hostname/IP
+          ansible_host: localhost  # Replace with actual host
+          ansible_connection: local  # Remove this for remote hosts
+      vars:
+        docker_home: /opt/docker  # Base directory for docker volumes
+    logging_servers:
+      hosts:
+        monitor01:  # You can separate roles across different hosts if needed

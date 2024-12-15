@@ -1,0 +1,43 @@
+---
+# Main monitoring configuration
+monitoring:
+  logging:
+    enabled: true
+    retention_days: 30
+    minio:
+      port: 9000
+      console_port: 9001
+      storage_size: "20Gi"
+    loki:
+      port: 3100
+      retention_days: 30
+      memory_limit: "1g"
+    promtail:
+      port: 9080
+      memory_limit: "512m"
+
+  metrics:
+    enabled: true
+    netdata:
+      port: 19999
+      memory_limit: "1g"
+    glances:
+      port: 61208
+      memory_limit: "512m"
+    stats:
+      collection_interval: 60 # seconds
+
+  network:
+    enabled: true
+    speedtest:
+      test_interval: 3600 # seconds
+      port: 8765
+    wireshark:
+      port: 3000
+      capture_interface: "eth0"
+
+# Docker configuration
+docker_home: /tmp/docker-temp
+
+# Network configuration
+internal_domain: "monitoring.local" # Used for service discovery
