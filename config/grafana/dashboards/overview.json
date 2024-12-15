@@ -32,49 +32,32 @@
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 1,
-          "mappings": [
-            {
-              "options": {
-                "match": "null",
-                "result": {
-                  "text": "N/A"
-                }
-              },
-              "type": "special"
-            }
-          ],
+          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
               }
             ]
           },
-          "unit": "s"
+          "unit": "d"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 3,
         "x": 0,
         "y": 0
       },
       "id": 1,
-      "links": [],
-      "maxDataPoints": 100,
       "options": {
-        "colorMode": "none",
+        "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
-        "orientation": "horizontal",
+        "orientation": "auto",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -124,16 +107,16 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 4,
+        "w": 3,
+        "x": 3,
         "y": 0
       },
       "id": 2,
       "options": {
-        "colorMode": "none",
+        "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
-        "orientation": "horizontal",
+        "orientation": "auto",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -154,7 +137,7 @@
           "refId": "A"
         }
       ],
-      "title": "CPU Cores",
+      "title": "CPUs",
       "type": "stat"
     },
     {
@@ -178,7 +161,7 @@
                 "value": null
               },
               {
-                "color": "yellow",
+                "color": "orange",
                 "value": 70
               },
               {
@@ -193,8 +176,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 8,
+        "w": 3,
+        "x": 6,
         "y": 0
       },
       "id": 3,
@@ -244,22 +227,22 @@
               }
             ]
           },
-          "unit": "bytes"
+          "unit": "decgbytes"
         },
         "overrides": []
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 12,
+        "w": 3,
+        "x": 9,
         "y": 0
       },
       "id": 4,
       "options": {
-        "colorMode": "none",
+        "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
-        "orientation": "horizontal",
+        "orientation": "auto",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -276,11 +259,11 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "node_memory_MemTotal_bytes",
+          "expr": "node_memory_MemTotal_bytes / 1024 / 1024 / 1024",
           "refId": "A"
         }
       ],
-      "title": "Memory Total",
+      "title": "Memory",
       "type": "stat"
     },
     {
@@ -304,7 +287,7 @@
                 "value": null
               },
               {
-                "color": "yellow",
+                "color": "orange",
                 "value": 70
               },
               {
@@ -319,8 +302,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 16,
+        "w": 3,
+        "x": 12,
         "y": 0
       },
       "id": 5,
@@ -371,7 +354,7 @@
                 "value": null
               },
               {
-                "color": "yellow",
+                "color": "orange",
                 "value": 70
               },
               {
@@ -386,8 +369,8 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
-        "x": 20,
+        "w": 3,
+        "x": 15,
         "y": 0
       },
       "id": 6,
@@ -416,6 +399,132 @@
       ],
       "title": "Root FS Usage",
       "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 70
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 18,
+        "y": 0
+      },
+      "id": 7,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "pluginVersion": "9.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "100 * (1 - ((node_memory_SwapFree_bytes) / node_memory_SwapTotal_bytes))",
+          "refId": "A"
+        }
+      ],
+      "title": "Swap Usage",
+      "type": "gauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 21,
+        "y": 0
+      },
+      "id": 8,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "expr": "count(container_last_seen{container!=\"\"})",
+          "refId": "A"
+        }
+      ],
+      "title": "Running Containers",
+      "type": "stat"
     },
     {
       "collapsed": false,
@@ -477,10 +586,6 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
               }
             ]
           },
@@ -492,7 +597,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 4
       },
       "id": 8,
       "options": {
@@ -562,7 +667,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 5
+        "y": 4
       },
       "hiddenSeries": false,
       "id": 9,
@@ -664,7 +769,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 13
+        "y": 12
       },
       "hiddenSeries": false,
       "id": 10,
@@ -761,7 +866,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 13
+        "y": 12
       },
       "hiddenSeries": false,
       "id": 11,
@@ -880,7 +985,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 20
       },
       "hiddenSeries": false,
       "id": 16,
@@ -1018,11 +1123,11 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
+        "w": 8,
+        "x": 0,
+        "y": 20
       },
-      "id": 12,
+      "id": 17,
       "options": {
         "legend": {
           "calcs": [],
@@ -1050,6 +1155,80 @@
       ],
       "title": "Container CPU Usage",
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "displayName": "${__field.labels.mountpoint}",
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 20
+      },
+      "id": 12,
+      "options": {
+        "displayMode": "gradient",
+        "minVizHeight": 10,
+        "minVizWidth": 0,
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true,
+        "valueMode": "color"
+      },
+      "pluginVersion": "9.1.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "100 - ((node_filesystem_avail_bytes{fstype!~\"tmpfs|squashfs|overlay|devtmpfs|nsfs\"} * 100) / node_filesystem_size_bytes{fstype!~\"tmpfs|squashfs|overlay|devtmpfs|nsfs\"})",
+          "legendFormat": "{{mountpoint}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Filesystem Usage",
+      "type": "bargauge"
     },
     {
       "datasource": {
@@ -1107,9 +1286,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 24
+        "w": 8,
+        "x": 16,
+        "y": 36
       },
       "id": 13,
       "options": {
@@ -1196,9 +1375,9 @@
       },
       "gridPos": {
         "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 24
+        "w": 8,
+        "x": 8,
+        "y": 28
       },
       "id": 14,
       "options": {
