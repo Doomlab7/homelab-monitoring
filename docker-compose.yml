@@ -12,8 +12,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     ports:
-      - "9000:9000"
-      - "9002:9001"
+      - "${MINIO_API_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9002}:9001"
     volumes:
       - ${DOCKER_HOME:-/tmp/docker-temp}/minio:/data
     healthcheck:
@@ -28,7 +28,7 @@ services:
     profiles: ["logging"]
     command: -config.file=/etc/loki/local-config.yaml
     ports:
-      - "3100:3100"
+      - "${LOKI_PORT:-3100}:3100"
     volumes:
       - ${DOCKER_HOME:-/tmp/docker-temp}/loki:/loki
     environment:
@@ -77,7 +77,7 @@ services:
     volumes:
       - /:/host:ro,rslave
     ports:
-      - "9100:9100"
+      - "${NODE_EXPORTER_PORT:-9100}:9100"
     deploy:
       resources:
         limits:
@@ -103,7 +103,7 @@ services:
       - /dev/kmsg:/dev/kmsg
     privileged: true
     ports:
-      - "8080:8080"
+      - "${CADVISOR_PORT:-8080}:8080"
     deploy:
       resources:
         limits:
@@ -113,9 +113,8 @@ services:
     <<: *restart_policy
     image: prom/prometheus:latest
     container_name: stats-prometheus
-    profiles: ["metrics"]
     ports:
-      - "9091:9090"
+      - "${PROMETHEUS_PORT:-9090}:9090"
     volumes:
       - ./config/prometheus:/etc/prometheus
       - ${DOCKER_HOME:-/tmp/docker-temp}/stats/prometheus:/prometheus
@@ -128,18 +127,13 @@ services:
       resources:
         limits:
           memory: ${PROMETHEUS_MEMORY:-1g}
-    depends_on:
-      - prometheus-init
-      - node-exporter
 
   grafana:
     <<: *restart_policy
     image: grafana/grafana:latest
     container_name: stats-grafana
-    profiles: ["metrics"]
-    user: "472"  # Default Grafana user ID
     ports:
-      - "3005:3000"
+      - "${GRAFANA_PORT:-3000}:3000"
     volumes:
       - grafana-storage:/var/lib/grafana
       - ./config/grafana/provisioning:/etc/grafana/provisioning
@@ -162,7 +156,7 @@ services:
     container_name: stats-telegraf
     profiles: ["metrics"]
     ports:
-      - "9273:9273"
+      - "${TELEGRAF_PORT:-9273}:9273"
     volumes:
       - ./config/telegraf:/etc/telegraf
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -180,11 +174,10 @@ services:
 
   smartctl:
     <<: *restart_policy
-    image: matusnovak/prometheus-smartctl:latest
+    image: prometheuscommunity/smartctl-exporter:latest
     container_name: stats-smartctl
-    profiles: ["metrics"]
     ports:
-      - "9902:9902"
+      - "${SMARTCTL_PORT:-9633}:9633"
     volumes:
       - /dev:/dev:ro
     privileged: true
@@ -193,18 +186,18 @@ services:
         limits:
           memory: ${SMARTCTL_MEMORY:-1g}
 
-  # # Network Monitoring Stack
-  # speedtest:
-  #   <<: *restart_policy
-  #   image: miguelndecarvalho/speedtest-exporter:latest
-  #   container_name: stats-speedtest
-  #   profiles: ["network"]
-  #   ports:
-  #     - "9798:9798"
-  #   deploy:
-  #     resources:
-  #       limits:
-  #         memory: ${SPEEDTEST_MEMORY:-256m}
+  # Network Monitoring Stack
+  speedtest:
+    <<: *restart_policy
+    image: miguelndecarvalho/speedtest-exporter:latest
+    container_name: stats-speedtest
+    profiles: ["network"]
+    ports:
+      - "${SPEEDTEST_PORT:-9798}:9798"
+    deploy:
+      resources:
+        limits:
+          memory: ${SPEEDTEST_MEMORY:-256m}
 
   wireshark:
     <<: *restart_policy
@@ -219,7 +212,7 @@ services:
     volumes:
       - ${DOCKER_HOME:-/tmp/docker-temp}/wireshark:/config
     ports:
-      - "3006:3000"
+      - "${WIRESHARK_PORT:-3000}:3000"
     devices:
       - /dev/net/tun
 
