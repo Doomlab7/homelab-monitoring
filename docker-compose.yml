@@ -194,6 +194,9 @@ services:
     profiles: ["network"]
     ports:
       - "${SPEEDTEST_PORT:-9798}:9798"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://0.0.0.0:${SPEEDTEST_PORT:-9798}/"]
+      timeout: 10s
     deploy:
       resources:
         limits:
