@@ -39,6 +39,11 @@ A comprehensive monitoring solution for homelab infrastructure using Prometheus,
 - Root/sudo access for container privileges
 - (Optional) [just](https://github.com/casey/just) command runner
 
+## 📸 Screenshot
+
+![image](https://github.com/user-attachments/assets/600e1ed8-d012-4537-8295-1743a1da32da)
+
+
 ## 🚀 Quick Start
 
 1. Clone the repository:
