@@ -2,6 +2,8 @@
 
 A comprehensive monitoring solution for homelab infrastructure using Prometheus, Grafana, and various exporters. This stack provides detailed insights into system performance, container metrics, and network statistics. 📊
 
+> This is duplicated in my homelab-compose repo but I keep this here for public access
+
 ## ✨ Features
 
 - **System Monitoring** 🖥️

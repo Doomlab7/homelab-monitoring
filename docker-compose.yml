@@ -6,7 +6,7 @@ services:
   minio:
     <<: *restart_policy
     image: minio/minio:latest
-    profiles: ["logging"]
+    container_name: stats-minio
     command: server --console-address ":9001" /data
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
@@ -16,6 +16,8 @@ services:
       - "${MINIO_CONSOLE_PORT:-9002}:9001"
     volumes:
       - ${DOCKER_HOME:-/tmp/docker-temp}/minio:/data
+    networks:
+      - monitoring
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s
@@ -25,7 +27,7 @@ services:
   loki:
     <<: *restart_policy
     image: grafana/loki:latest
-    profiles: ["logging"]
+    container_name: stats-loki
     command: -config.file=/etc/loki/local-config.yaml
     ports:
       - "${LOKI_PORT:-3100}:3100"
@@ -33,6 +35,8 @@ services:
       - ${DOCKER_HOME:-/tmp/docker-temp}/loki:/loki
     environment:
       - LOKI_RETENTION_PERIOD=${LOKI_RETENTION_DAYS:-30}d
+    networks:
+      - monitoring
     deploy:
       resources:
         limits:
@@ -43,7 +47,7 @@ services:
   promtail:
     <<: *restart_policy
     image: grafana/promtail:latest
-    profiles: ["logging"]
+    container_name: stats-promtail
     volumes:
       - /var/log:/var/log
       - ${DOCKER_HOME:-/tmp/docker-temp}/promtail:/etc/promtail
@@ -52,23 +56,26 @@ services:
       resources:
         limits:
           memory: ${PROMTAIL_MEMORY:-512m}
+    networks:
+      - monitoring
     depends_on:
       - loki
 
   # Metrics Stack
   prometheus-init:
     image: busybox:latest
-    profiles: ["metrics"]
+    container_name: stats-prometheus-init
     volumes:
       - ${DOCKER_HOME:-/tmp/docker-temp}/stats/prometheus:/prometheus
     command: sh -c "mkdir -p /prometheus && chown -R 65534:65534 /prometheus"
+    networks:
+      - monitoring
     user: root
 
   node-exporter:
     <<: *restart_policy
     image: prom/node-exporter:latest
     container_name: stats-node-exporter
-    profiles: ["metrics"]
     command:
       - '--path.rootfs=/host'
       - '--path.procfs=/host/proc'
@@ -78,6 +85,8 @@ services:
       - /:/host:ro,rslave
     ports:
       - "${NODE_EXPORTER_PORT:-9100}:9100"
+    networks:
+      - monitoring
     deploy:
       resources:
         limits:
@@ -92,13 +101,14 @@ services:
     <<: *restart_policy
     image: gcr.io/cadvisor/cadvisor:latest
     container_name: stats-cadvisor
-    profiles: ["metrics"]
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker:/var/lib/docker:ro
       - /dev/disk/:/dev/disk:ro
+    networks:
+      - monitoring
     devices:
       - /dev/kmsg:/dev/kmsg
     privileged: true
@@ -115,6 +125,8 @@ services:
     container_name: stats-prometheus
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
+    networks:
+      - monitoring
     volumes:
       - ./config/prometheus:/etc/prometheus
       - ${DOCKER_HOME:-/tmp/docker-temp}/stats/prometheus:/prometheus
@@ -134,6 +146,8 @@ services:
     container_name: stats-grafana
     ports:
       - "${GRAFANA_PORT:-3000}:3000"
+    networks:
+      - monitoring
     volumes:
       - grafana-storage:/var/lib/grafana
       - ./config/grafana/provisioning:/etc/grafana/provisioning
@@ -154,7 +168,6 @@ services:
     <<: *restart_policy
     image: telegraf:latest
     container_name: stats-telegraf
-    profiles: ["metrics"]
     ports:
       - "${TELEGRAF_PORT:-9273}:9273"
     volumes:
@@ -167,6 +180,8 @@ services:
       - HOST_PROC=/host/proc
       - HOST_SYS=/host/sys
       - HOST_ETC=/host/etc
+    networks:
+      - monitoring
     deploy:
       resources:
         limits:
@@ -181,6 +196,8 @@ services:
     volumes:
       - /dev:/dev:ro
     privileged: true
+    networks:
+      - monitoring
     deploy:
       resources:
         limits:
@@ -191,12 +208,13 @@ services:
     <<: *restart_policy
     image: miguelndecarvalho/speedtest-exporter:latest
     container_name: stats-speedtest
-    profiles: ["network"]
     ports:
       - "${SPEEDTEST_PORT:-9798}:9798"
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://0.0.0.0:${SPEEDTEST_PORT:-9798}/"]
       timeout: 10s
+    networks:
+      - monitoring
     deploy:
       resources:
         limits:
@@ -205,10 +223,12 @@ services:
   wireshark:
     <<: *restart_policy
     image: lscr.io/linuxserver/wireshark:latest
-    profiles: ["network"]
+    container_name: stats-wireshark
     cap_add:
       - NET_ADMIN
-    network_mode: host
+    # network_mode: host
+    networks:
+      - monitoring
     environment:
       - PUID=${PUID:-1000}
       - PGID=${PGID:-1000}
@@ -219,9 +239,36 @@ services:
     devices:
       - /dev/net/tun
 
+  # zfs-exporter:
+  #   <<: *restart_policy
+  #   image: eripa/prometheus-zfs:latest
+  #   container_name: stats-zfs-exporter
+  #   ports:
+  #     - "${ZFS_EXPORTER_PORT:-9200}:9200"
+  #   volumes:
+  #     - /proc:/host/proc:ro
+  #     - /sys:/host/sys:ro
+  #     - /etc:/host/etc:ro
+  #     - /run:/host/run:ro
+  #   privileged: true
+  #   environment:
+  #     - ZFS_PROC=/host/proc
+  #     - ZFS_SYS=/host/sys
+  #     - ZFS_ETC=/host/etc
+  #     - ZFS_RUN=/host/run
+  #   networks:
+  #     - monitoring
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: ${ZFS_EXPORTER_MEMORY:-256m}
+
 networks:
-  default:
-    name: monitoring
+  monitoring:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.69.0.0/16
 
 volumes:
   grafana-storage:

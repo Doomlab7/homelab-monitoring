@@ -39,3 +39,7 @@ scrape_configs:
   - targets: [ "stats-cadvisor:8080" ]
   metrics_path: /metrics
   scrape_interval: 15s
+
+# - job_name: 'zfs'
+#   static_configs:
+#     - targets: ['zfs-exporter:9200']
