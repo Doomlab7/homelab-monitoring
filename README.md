@@ -39,7 +39,6 @@ A comprehensive monitoring solution for homelab infrastructure using Prometheus,
 - Linux-based system
 - Sufficient disk space for metrics storage
 - Root/sudo access for container privileges
-- (Optional) [just](https://github.com/casey/just) command runner
 
 ## 📸 Screenshot
 
@@ -62,22 +61,7 @@ cp .env.example .env
 
 3. Start the monitoring stack:
 
-Using `just` (recommended):
-
-[Install Instructions Here](https://github.com/casey/just)
-
-```bash
-# Start the stack
-just up
-
-# View logs
-just logs
-
-# Stop the stack
-just down
-```
-
-If you don't want to install `just`, you can refer to the `justfile` for the relevant Docker Compose commands to run directly.
+`docker compuse up -d`
 
 4. Access Grafana:
 - Open `http://localhost:3000` in your browser (or your chosen port)
